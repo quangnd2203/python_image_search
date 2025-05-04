@@ -14,7 +14,7 @@ import streamlit as st
 
 import llm
 from scipy.spatial.distance import cosine
-from translation import t
+from src.translation import t
 
 # ===================== Streamlit Page Config (move to top after imports) =====================
 st.set_page_config(

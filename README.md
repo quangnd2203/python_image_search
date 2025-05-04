@@ -61,10 +61,11 @@ python_image_search/
 ├── poetry.lock
 ├── db.json
 ├── assets/
+├── main.py
 └── src/
-    ├── main.py
     ├── translation.py
     └── ...
+
 ```
 
 ## Usage
