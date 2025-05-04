@@ -74,7 +74,7 @@ poetry shell
 
 Then run Streamlit app or any scripts you want:
 ```bash
-poetry run streamlit run main.py
+poetry run streamlit run src/main.py
 ```
 
 ### How to Use the App
