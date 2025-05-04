@@ -59,10 +59,12 @@ python_image_search/
 ├── README.md
 ├── pyproject.toml
 ├── poetry.lock
-├── python_image_search/
-│   └── (Your source code files)
-├── assets/
 ├── db.json
+├── assets/
+└── src/
+    ├── main.py
+    ├── translation.py
+    └── ...
 ```
 
 ## Usage
@@ -74,7 +76,7 @@ poetry shell
 
 Then run Streamlit app or any scripts you want:
 ```bash
-poetry run streamlit run src/main.py
+poetry run streamlit run src/python_image_search/main.py
 ```
 
 ### How to Use the App
