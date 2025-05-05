@@ -75,8 +75,8 @@ def render_image_grid(image_paths, scores: dict[str, float] = None):
         with cols[i % 3]:
             caption = f"{img_path}"
             if scores and img_path in scores:
-                # Show similarity as bold percentage – (1 - cosine distance) * 100
-                caption += f" <span style='color:#000000; font-weight:bold;'>Similarity: {((1 - scores[img_path]) * 100):.1f}%</span>"
+                # Show similarity as bold percentage – similarity * 100
+                caption += f" <span style='color:#000000; font-weight:bold;'>Similarity: {(scores[img_path] * 100):.1f}%</span>"
             st.image(new_img, width=400, use_container_width=False, clamp=False, channels="RGB", output_format="auto")
             st.markdown(caption, unsafe_allow_html=True)
 
@@ -105,14 +105,15 @@ def init_embeddings():
 
 # ===================== Uploaded Image Embedding =====================
 def handle_uploaded_image_embedding(image_file):
-    # Convert uploaded image to embedding vector and stash it for later matching
-    image = Image.open(image_file).convert("RGB")
-    with io.BytesIO() as output:
-        image.save(output, format="PNG")
-        img_bytes = output.getvalue()
-    embedding = list(model.embed_batch([img_bytes]))[0]
-    st.session_state["uploaded_embedding"] = embedding
-    return embedding
+    with st.spinner("🔄 Processing uploaded image..."):
+        # Convert uploaded image to embedding vector and stash it for later matching
+        image = Image.open(image_file).convert("RGB")
+        with io.BytesIO() as output:
+            image.save(output, format="PNG")
+            img_bytes = output.getvalue()
+        embedding = list(model.embed_batch([img_bytes]))[0]
+        st.session_state["uploaded_embedding"] = embedding
+        return embedding
 
 # ===================== Upload Handling =====================
 def handle_upload():
@@ -124,17 +125,15 @@ def handle_upload():
 
 # ===================== Matching Logic =====================
 def get_top_matches(uploaded_vec, db, threshold=0.3, top_k=3):
-    # Compare uploaded image vector with gallery DB using cosine distance
-    distances = []
+    # Compare uploaded image vector with gallery DB using cosine similarity
+    similarities = []
     for name, vec in db.items():
-        dist = cosine(uploaded_vec, vec)
-        # Skip if distance is too high – not similar enough
-        if dist <= threshold:
-            distances.append((name, dist))
-    # Sort by closest match
-    distances.sort(key=lambda x: x[1])
-    # Just grab the top-k most similar
-    return distances[:top_k]
+        similarity = 1 - cosine(uploaded_vec, vec)
+        if similarity >= threshold:
+            similarities.append((name, similarity))
+    # Sort by highest similarity
+    similarities.sort(key=lambda x: x[1], reverse=True)
+    return similarities
 
 # ===================== Main Application Logic =====================
 def main():
@@ -156,20 +155,26 @@ def main():
     else:
         if st.session_state["uploaded_file"]:
             process_uploaded_image(st.session_state["uploaded_file"])
+
+            st.session_state["threshold"] = st.sidebar.slider(
+                "🔍 Similarity threshold", 0.1, 1.0,
+                0.5, step=0.01
+            )
+            
             uploaded_vec = handle_uploaded_image_embedding(st.session_state["uploaded_file"])
 
             # Load database
             with open("db.json", "r") as f:
                 db = json.load(f)
 
-            top_matches_with_distances = get_top_matches(uploaded_vec, db, threshold=0.3, top_k=3)
+            top_matches_with_similarities = get_top_matches(uploaded_vec, db, threshold=st.session_state["threshold"])
 
-            # Extract names and distances dict for rendering
-            top_matches = [name for name, _ in top_matches_with_distances]
-            distances_dict = {name: dist for name, dist in top_matches_with_distances}
+            # Extract names and similarities dict for rendering
+            top_matches = [name for name, _ in top_matches_with_similarities]
+            similarities_dict = {name: sim for name, sim in top_matches_with_similarities}
 
             # Render only top matching images
-            render_image_grid(top_matches, scores=distances_dict)
+            render_image_grid(top_matches, scores=similarities_dict)
 
             return  # Skip rendering all images again
         else:
