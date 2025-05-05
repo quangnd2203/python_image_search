@@ -25,10 +25,11 @@ WORKDIR /app
 COPY . .
 
 # Install dependencies
-RUN poetry env use python3.11 && poetry install && poetry run llm install llm-clip
+# RUN poetry env use python3.11 && poetry install && poetry run llm install llm-clip
+RUN poetry env use python3.11 && poetry install
 
 # Expose Streamlit port
 EXPOSE 8501
 
 # Set entrypoint
-CMD ["poetry", "run", "streamlit", "run", "main.py", "--server.port=8501", "--server.headless=true", "--server.enableCORS=false"]
+CMD ["bash", "-c", "poetry run llm install llm-clip && poetry run streamlit run main.py --server.port=8501 --server.headless=true"]
