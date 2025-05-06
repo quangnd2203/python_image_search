@@ -15,6 +15,7 @@ import streamlit as st
 import llm
 from scipy.spatial.distance import cosine
 from src.translation import t
+from src.clip_model import CLIPModel
 
 # ===================== Streamlit Config and Language =====================
 st.set_page_config(
@@ -28,7 +29,7 @@ st.session_state["lang"] = lang_code
 
 # ===================== Model Load =====================
 def load_model():
-    return llm.get_embedding_model("clip")
+    return CLIPModel()
 
 model = load_model()
 
@@ -95,7 +96,7 @@ def init_embeddings():
         with io.BytesIO() as output:
             img.save(output, format="PNG")
             img_bytes = output.getvalue()
-        embeddings = list(model.embed_batch([img_bytes]))
+        embeddings = [model.embed_image(img_bytes)]
         if embeddings:
             db[img_path] = embeddings[0]
     with open("db.json", "w") as f:
@@ -111,7 +112,7 @@ def handle_uploaded_image_embedding(image_file):
         with io.BytesIO() as output:
             image.save(output, format="PNG")
             img_bytes = output.getvalue()
-        embedding = list(model.embed_batch([img_bytes]))[0]
+        embedding = model.embed_image(img_bytes)
         st.session_state["uploaded_embedding"] = embedding
         return embedding
 
