@@ -1,0 +1,25 @@
+from enum import Enum
+
+
+class BodyPrompt(str, Enum):
+    FACE = "a photo of face"
+    EYE = "a photo of eye"
+    EAR = "a photo of ear"
+    MOUTH = "a photo of mouth"
+    NOSE = "a photo of nose"
+    NECK = "a photo of neck"
+    SHOULDER = "a photo of shoulder"
+    CHEST = "a photo of chest"
+    ARM = "a photo of arm"
+    ELBOW = "a photo of elbow"
+    HAND = "a photo of hand"
+    FINGER = "a photo of finger"
+    WAIST = "a photo of waist"
+    BACK = "a photo of back"
+    UPPER_BODY = "a photo of upper body"
+    LEG = "a photo of leg"
+    KNEE = "a photo of knee"
+    FOOT = "a photo of foot"
+    TOE = "a photo of toe"
+    FULL_BODY = "a photo of full body"
+    LOWER_BODY = "a photo of lower body"

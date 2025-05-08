@@ -5,6 +5,7 @@ This app allows users to initialize image embeddings from a local gallery and
 upload an image to compare against the gallery using cosine distance.
 """
 
+# ===================== Imports =====================
 import os
 import io
 import json
@@ -12,10 +13,14 @@ import base64
 from PIL import Image
 import streamlit as st
 
+import pillow_heif
+pillow_heif.register_heif_opener()
+
 import llm
 from scipy.spatial.distance import cosine
 from src.translation import t
 from src.clip_model import CLIPModel
+from src.body_prompt import BodyPrompt
 
 # ===================== Streamlit Config and Language =====================
 st.set_page_config(
@@ -35,7 +40,8 @@ model = load_model()
 
 # ===================== File System Helpers =====================
 def get_image_paths():
-    return [f for f in os.listdir("assets") if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+    """Return a list of image filenames in the assets directory with supported extensions."""
+    return [f for f in os.listdir("assets") if f.lower().endswith(('.png', '.jpg', '.jpeg', '.heic'))]
 
 def is_db_initialized():
     return os.path.exists("db.json")
@@ -62,33 +68,39 @@ def render_init_notice():
 def render_upload_ui():
     # Render the image upload UI component and return the uploaded file if any
     st.markdown(t("upload_prompt", lang_code))
-    return st.file_uploader(t("choose_image", lang_code), type=["jpg", "jpeg", "png"])
+    return st.file_uploader(t("choose_image", lang_code), type=None)
 
 def render_image_grid(image_paths, scores: dict[str, float] = None):
-    # Render a grid of images from the given file paths
+    """Render a grid of images, optionally displaying similarity scores under each."""
     st.markdown(t("gallery_images", lang_code))
     cols = st.columns(3)  # Adjust number of columns as needed
     for i, img_path in enumerate(image_paths):
-        img = Image.open(os.path.join("assets", img_path)).convert("RGB")
+        img_path_full = os.path.join("assets", img_path)
+        try:
+            img = Image.open(img_path_full).convert("RGB")
+        except Exception as e:
+            st.warning(f"⚠️ Cannot load image {img_path}: {e}")
+            continue
+
         img.thumbnail((400, 300), Image.LANCZOS)
         new_img = Image.new("RGB", (400, 300), (255, 255, 255))
         new_img.paste(img, ((400 - img.width) // 2, (300 - img.height) // 2))
+
         with cols[i % 3]:
             caption = f"{img_path}"
             if scores and img_path in scores:
-                # Show similarity as bold percentage – similarity * 100
                 caption += f" <span style='color:#000000; font-weight:bold;'>Similarity: {(scores[img_path] * 100):.1f}%</span>"
-            st.image(new_img, width=400, use_container_width=False, clamp=False, channels="RGB", output_format="auto")
+            st.image(new_img, width=400, use_container_width=False)
             st.markdown(caption, unsafe_allow_html=True)
 
 def process_uploaded_image(uploaded_file):
-    # Display the uploaded image in the app
+    """Display the uploaded image on the screen."""
     image = Image.open(uploaded_file).convert("RGB")
     st.image(image, caption=t("uploaded_image", lang_code), width=400)
 
 # ===================== Embedding Logic =====================
 def init_embeddings():
-    # Build the embedding DB from all images in /assets – run once unless images change
+    """Initialize the embedding database from all images in the assets folder."""
     image_paths = get_image_paths()
     db = {}
     for img_path in image_paths:
@@ -106,6 +118,7 @@ def init_embeddings():
 
 # ===================== Uploaded Image Embedding =====================
 def handle_uploaded_image_embedding(image_file):
+    """Embed the uploaded image and store the vector in session state."""
     with st.spinner("🔄 Processing uploaded image..."):
         # Convert uploaded image to embedding vector and stash it for later matching
         image = Image.open(image_file).convert("RGB")
@@ -118,6 +131,7 @@ def handle_uploaded_image_embedding(image_file):
 
 # ===================== Upload Handling =====================
 def handle_upload():
+    """Render upload UI and update session state with uploaded file."""
     uploaded = render_upload_ui()
     if uploaded:
         st.session_state["uploaded_file"] = uploaded
@@ -126,6 +140,7 @@ def handle_upload():
 
 # ===================== Matching Logic =====================
 def get_top_matches(uploaded_vec, db, threshold=0.3, top_k=3):
+    """Return top matching images from the DB based on similarity threshold."""
     # Compare uploaded image vector with gallery DB using cosine similarity
     similarities = []
     for name, vec in db.items():
@@ -138,6 +153,7 @@ def get_top_matches(uploaded_vec, db, threshold=0.3, top_k=3):
 
 # ===================== Main Application Logic =====================
 def main():
+    """Main application logic: handles flow of UI and matching."""
     # Run the app UI and flow
     render_init_notice()
 
@@ -163,6 +179,11 @@ def main():
             )
             
             uploaded_vec = handle_uploaded_image_embedding(st.session_state["uploaded_file"])
+
+            # Predict the most likely description of the image using semantic prompts
+            all_prompts = [prompt.value for prompt in BodyPrompt]
+            guessed_description, description_score = model.guess_prompt(uploaded_vec, all_prompts)
+            st.markdown(f"**📝 Description guess:** `{guessed_description}` &nbsp;|&nbsp; **Confidence:** {description_score:.2%}")
 
             # Load database
             with open("db.json", "r") as f:
