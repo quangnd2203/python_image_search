@@ -41,7 +41,7 @@ model = load_model()
 # ===================== File System Helpers =====================
 def get_image_paths():
     """Return a list of image filenames in the assets directory with supported extensions."""
-    return [f for f in os.listdir("assets") if f.lower().endswith(('.png', '.jpg', '.jpeg', '.heic'))]
+    return [f for f in os.listdir("assets") if f.lower().endswith(('.png', '.jpg', '.jpeg', '.heic', '.webp'))]
 
 def is_db_initialized():
     return os.path.exists("db.json")
