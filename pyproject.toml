@@ -6,13 +6,22 @@ authors = [
     {name = "quangnguyen"}
 ]
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
-    "llm (>=0.24.2,<0.25.0)",
-    "ipython (>=9.2.0,<10.0.0)",
-    "streamlit (>=1.45.0,<2.0.0)",
+    "llm (>=0.25,<0.26)",
+    "streamlit (>=1.45.1,<2.0.0)",
     "watchdog (>=6.0.0,<7.0.0)",
-    "pillow-heif (>=0.22.0,<0.23.0)"
+    "pillow-heif (>=0.22.0,<0.23.0)",
+    "mediapipe (>=0.10.21,<0.11.0)",
+    "python-magic (>=0.4.27,<0.5.0)",
+    "duckduckgo-search (>=8.0.2,<9.0.0)",
+    "clip @ git+https://github.com/openai/CLIP.git",
+    "onnx (>=1.18.0,<2.0.0)",
+    "onnxruntime (>=1.22.0,<2.0.0)",
+    "torchvision (==0.16.0)",
+    "torch (==2.1.0)",
+    "mobileclip @ git+https://github.com/quangnd2203/ml-mobileclip.git@HEAD",
+
 ]
 
 

@@ -21,6 +21,7 @@ from scipy.spatial.distance import cosine
 from src.translation import t
 from src.clip_model import CLIPModel
 from src.body_prompt import BodyPrompt
+from src.detect_pose import get_pose_landmarks
 
 # ===================== Streamlit Config and Language =====================
 st.set_page_config(
@@ -96,7 +97,7 @@ def render_image_grid(image_paths, scores: dict[str, float] = None):
 def process_uploaded_image(uploaded_file):
     """Display the uploaded image on the screen."""
     image = Image.open(uploaded_file).convert("RGB")
-    st.image(image, caption=t("uploaded_image", lang_code), width=400)
+    st.image(image, caption=t("uploaded_image", lang_code), width=250)
 
 # ===================== Embedding Logic =====================
 def init_embeddings():
@@ -172,6 +173,15 @@ def main():
     else:
         if st.session_state["uploaded_file"]:
             process_uploaded_image(st.session_state["uploaded_file"])
+
+            # Extract and display pose landmarks
+            pose_image = Image.open(st.session_state["uploaded_file"])
+            pose_names = get_pose_landmarks(pose_image)
+            if pose_names:
+                st.markdown("### 🧍 Detected Pose Landmarks")
+                st.markdown(", ".join(pose_names))
+            else:
+                st.info("No pose landmarks detected.")
 
             st.session_state["threshold"] = st.sidebar.slider(
                 "🔍 Similarity threshold", 0.1, 1.0,
